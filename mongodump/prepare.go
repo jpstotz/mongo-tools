@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+    "bufio"
 	"strings"
 
 	"github.com/mongodb/mongo-tools/common/archive"
@@ -14,6 +15,9 @@ import (
 	"github.com/mongodb/mongo-tools/common/log"
 	"gopkg.in/mgo.v2/bson"
 )
+
+// Default buffer size: 512KiB
+const defaultBufferSize = 524288
 
 type NilPos struct{}
 
@@ -56,6 +60,22 @@ func (bwc writeFlushCloser) Close() error {
 	return bwc.Flush()
 }
 
+func NewBufferedWriteCloser(wc io.WriteCloser) *BufferedWriteCloser {
+    return &BufferedWriteCloser{wc, bufio.NewWriterSize(wc, defaultBufferSize)} 
+}
+
+type BufferedWriteCloser struct {
+    writeCloser io.WriteCloser
+    *bufio.Writer
+}
+
+func (bwc *BufferedWriteCloser) Close() error {
+    if err := bwc.Flush(); err != nil {
+        return err
+    }
+    return bwc.writeCloser.Close()
+}
+
 // realBSONFile implements the intents.file interface. It lets intents write to real BSON files
 // ok disk via an embedded bufio.Writer
 type realBSONFile struct {
@@ -83,6 +103,8 @@ func (f *realBSONFile) Open() (err error) {
 	}
 
 	f.WriteCloser, err = os.Create(f.path)
+    f.WriteCloser = NewBufferedWriteCloser(f.WriteCloser) 
+    
 	if err != nil {
 		return fmt.Errorf("error creating BSON file %v: %v", f.path, err)
 	}
