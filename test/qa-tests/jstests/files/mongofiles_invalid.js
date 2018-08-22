@@ -13,17 +13,17 @@ load('jstests/files/util/mongofiles_common.js');
 
     // run with invalid option
     assert.neq(runMongoProgram.apply(this, ['mongofiles',
-        '--invalid', conn.port,
-        'put', filesToInsert[0]]
+      '--invalid', conn.port,
+      'put', filesToInsert[0]]
       .concat(passthrough.args)),
-      0, 'invalid-option: mongofiles succeeded when it should have failed');
+    0, 'invalid-option: mongofiles succeeded when it should have failed');
 
     // run with invalid command
     assert.neq(runMongoProgram.apply(this, ['mongofiles',
-        '--port', conn.port,
-        'invalid', filesToInsert[0]]
+      '--port', conn.port,
+      'invalid', filesToInsert[0]]
       .concat(passthrough.args)),
-      0, 'invalid-command: mongofiles succeeded when it should have failed');
+    0, 'invalid-command: mongofiles succeeded when it should have failed');
 
     t.stop();
   };
@@ -32,6 +32,9 @@ load('jstests/files/util/mongofiles_common.js');
   passthroughs.forEach(function(passthrough) {
     runTests(standaloneTopology, passthrough);
     runTests(replicaSetTopology, passthrough);
-    runTests(shardedClusterTopology, passthrough);
+    // SERVER-32677: problems with sharded cluster orchestration with auth
+    if (!requiresAuth(passthrough)) {
+      runTests(shardedClusterTopology, passthrough);
+    }
   });
 }());

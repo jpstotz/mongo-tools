@@ -12,10 +12,10 @@ load('jstests/files/util/mongofiles_common.js');
 
     // ensure tool runs without error
     assert.eq(runMongoProgram.apply(this, ['mongofiles',
-        '--port', conn.port,
-        '--version']
+      '--port', conn.port,
+      '--version']
       .concat(passthrough.args)),
-      0, '--version failed');
+    0, '--version failed');
 
     t.stop();
   };
@@ -24,6 +24,9 @@ load('jstests/files/util/mongofiles_common.js');
   passthroughs.forEach(function(passthrough) {
     runTests(standaloneTopology, passthrough);
     runTests(replicaSetTopology, passthrough);
-    runTests(shardedClusterTopology, passthrough);
+    // SERVER-32677: problems with sharded cluster orchestration with auth
+    if (!requiresAuth(passthrough)) {
+      runTests(shardedClusterTopology, passthrough);
+    }
   });
 }());

@@ -16,11 +16,11 @@ load('jstests/files/util/mongofiles_common.js');
 
     // ensure tool runs without error with a non-empty --type argument
     assert.eq(runMongoProgram.apply(this, ['mongofiles',
-        '--port', conn.port,
-        '-t', contentType,
-        'put', filesToInsert[0]]
+      '--port', conn.port,
+      '-t', contentType,
+      'put', filesToInsert[0]]
       .concat(passthrough.args)),
-      0, 'put failed when it should have succeeded 1');
+    0, 'put failed when it should have succeeded 1');
 
     var fileObj = db.fs.files.findOne({
       filename: filesToInsert[0]
@@ -37,11 +37,11 @@ load('jstests/files/util/mongofiles_common.js');
       comparison = 'neq';
     }
     assert[comparison](runMongoProgram.apply(this, ['mongofiles',
-          '--port', conn.port,
-          '--type', '',
-          'put', filesToInsert[1]]
+      '--port', conn.port,
+      '--type', '',
+      'put', filesToInsert[1]]
       .concat(passthrough.args)),
-        0, 'put failed unexpectedly');
+    0, 'put failed unexpectedly');
 
     if (!_isWindows()) {
       fileObj = db.fs.files.findOne({
@@ -58,6 +58,9 @@ load('jstests/files/util/mongofiles_common.js');
   passthroughs.forEach(function(passthrough) {
     runTests(standaloneTopology, passthrough);
     runTests(replicaSetTopology, passthrough);
-    runTests(shardedClusterTopology, passthrough);
+    // SERVER-32677: problems with sharded cluster orchestration with auth
+    if (!requiresAuth(passthrough)) {
+      runTests(shardedClusterTopology, passthrough);
+    }
   });
 }());
